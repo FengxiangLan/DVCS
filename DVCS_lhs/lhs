@@ -1,0 +1,91 @@
+#!/usr/local/bin/ruby
+dir = File.dirname(__FILE__)
+load dir + "/revlog.rb"
+load dir + "/repository.rb"
+load dir + "/changelog.rb"
+require dir + "/revlog"
+
+cmd = ARGV[0]
+args = ARGV[1..-1]
+
+if cmd == "init"
+  repo = Repository.new(".", 1)
+  exit(0)
+else
+  repo = Repository.new
+end
+
+if cmd == "checkout"
+  rev = repo.changelog.tip
+  if args.length
+    rev = args[0].to_i
+  end
+  repo.checkout(rev)
+
+elsif cmd == "add"
+  repo.add(args)
+
+elsif cmd == "delete"
+  repo.delete(args)
+
+elsif cmd == "commit"
+  repo.commit()
+
+elsif cmd == "stat"
+  repo.diffdir(repo.root)
+
+elsif cmd == "cat"
+  p repo.cat(args[0].to_s, args[1].to_i)
+
+elsif cmd == "diff"
+    # TODO judge input number
+    diff = repo.diff(args[0].to_i, args[1].to_i, args[2].to_s)
+    diff.each do |e|
+        p e
+    end
+
+elsif cmd == "clone"
+    # repo.clone(args[0].to_s, args[1].to_s)
+    if args.length == 1
+        repo.clone("./", args[0].to_s)
+    else
+        repo.clone(args[0].to_s, args[1].to_s)
+    end
+
+elsif cmd == "log"
+  for i in (0...repo.changelog.tip + 1)
+    changes = repo.changelog.changeset(i)
+    (p1, p2) = repo.changelog.parents(i)
+    puts "%d: %d %d %s" % [i, p1, p2, repo.changelog.node(i).unpack('H*').first]
+    puts "manifest nodeid: " % changes[0].unpack('H*').first
+    puts "User: %s" % changes[1]
+    puts "changed files: "
+    changes[3].each do |f|
+      puts f
+    end
+    puts "description: %s"% changes[4]
+  end
+
+elsif cmd == "heads"
+    i = repo.changelog.tip
+    changes = repo.changelog.changeset(i)
+    (p1, p2) = repo.changelog.parents(i)
+    puts "%d: %d %d %s" % [i, p1, p2, repo.changelog.node(i).unpack('H*').first]
+    puts "manifest nodeid: %s" % changes[0].unpack('H*').first
+    puts "User: %s" % changes[1]
+    puts "changed files: "
+    changes[3].each do |f|
+      puts f
+    end
+    puts "description: %s"% changes[4]
+
+elsif cmd == "merge"
+    other = Repository.new(args[0])
+    repo.merge(other)
+
+elsif cmd == "help"
+    
+end
+
+
+
